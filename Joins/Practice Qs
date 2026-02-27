@@ -1,0 +1,1246 @@
+PRINT 'ROUND 1 - SQL SERVER JOINS PRACTICE QUESTIONS'
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 1: INNER JOIN
+-- List all employees with their department names
+-- =============================================
+PRINT 'QUESTION 1: List all employees with their department names'
+PRINT 'Expected: Should return 19 employees (excluding Kevin Lee who has no department)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY e.LastName, e.FirstName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 2: LEFT JOIN
+-- List ALL employees including those without departments
+-- =============================================
+PRINT 'QUESTION 2: List ALL employees, including those without assigned departments'
+PRINT 'Expected: Should return 20 employees (including Kevin Lee)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle,
+    ISNULL(d.DepartmentName, 'Not Assigned') AS DepartmentName,
+    ISNULL(d.Location, 'N/A') AS Location
+FROM Employees e
+LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY e.LastName, e.FirstName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 3: RIGHT JOIN
+-- List ALL departments including those without employees
+-- =============================================
+PRINT 'QUESTION 3: List ALL departments, including those without employees'
+PRINT 'Expected: Should show Research department with NULL employee values'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location,
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName
+FROM Employees e
+RIGHT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 4: FULL OUTER JOIN
+-- Show all employees and all departments, including unmatched records
+-- =============================================
+PRINT 'QUESTION 4: Show all employees and all departments (including unmatched)'
+PRINT 'Expected: Should show Research dept (no employees) and Kevin Lee (no dept)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+FULL OUTER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 5: MULTIPLE JOINS
+-- Show employees with their departments and current salaries
+-- =============================================
+PRINT 'QUESTION 5: List employees with department and salary information'
+PRINT 'Expected: Should show 19 employees with salary (Kevin Lee has no salary)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS FullName,
+    d.DepartmentName,
+    e.JobTitle,
+    s.Salary,
+    s.EffectiveDate
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+INNER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY s.Salary DESC;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 6: SELF JOIN
+-- Find employees who work in the same department
+-- =============================================
+PRINT 'QUESTION 6: Find pairs of employees working in the same department'
+PRINT 'Expected: Should show colleague pairs from same departments'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e1.FirstName + ' ' + e1.LastName AS Employee1,
+    e2.FirstName + ' ' + e2.LastName AS Employee2,
+    d.DepartmentName
+FROM Employees e1
+INNER JOIN Employees e2 ON e1.DepartmentID = e2.DepartmentID AND e1.EmployeeID < e2.EmployeeID
+INNER JOIN Departments d ON e1.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, Employee1;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 7: COMPLEX JOIN WITH AGGREGATION
+-- Show total hours worked by each employee across all projects
+-- =============================================
+PRINT 'QUESTION 7: Calculate total hours worked by each employee on all projects'
+PRINT 'Expected: Should show employees with their total project hours'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS FullName,
+    d.DepartmentName,
+    COUNT(ep.ProjectID) AS NumberOfProjects,
+    SUM(ep.HoursWorked) AS TotalHoursWorked
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+LEFT JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+GROUP BY e.EmployeeID, e.FirstName, e.LastName, d.DepartmentName
+ORDER BY TotalHoursWorked DESC;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 8: JOIN WITH SUBQUERY
+-- Find employees earning above their department average
+-- =============================================
+PRINT 'QUESTION 8: Find employees earning above their department average salary'
+PRINT 'Expected: Should show high earners in each department'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.FirstName + ' ' + e.LastName AS FullName,
+    d.DepartmentName,
+    s.Salary,
+    dept_avg.AvgSalary AS DepartmentAverage,
+    s.Salary - dept_avg.AvgSalary AS DifferenceFromAvg
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+INNER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+INNER JOIN (
+    SELECT 
+        e2.DepartmentID,
+        AVG(s2.Salary) AS AvgSalary
+    FROM Employees e2
+    INNER JOIN Salaries s2 ON e2.EmployeeID = s2.EmployeeID
+    GROUP BY e2.DepartmentID
+) dept_avg ON d.DepartmentID = dept_avg.DepartmentID
+WHERE s.Salary > dept_avg.AvgSalary
+ORDER BY d.DepartmentName, s.Salary DESC;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 9: MANY-TO-MANY JOIN
+-- Show all projects with assigned employees
+-- =============================================
+PRINT 'QUESTION 9: List all projects with their assigned employees and roles'
+PRINT 'Expected: Should show project details with employee assignments'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectName,
+    d.DepartmentName,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    ep.Role,
+    ep.HoursWorked,
+    p.Budget
+FROM Projects p
+LEFT JOIN Departments d ON p.DepartmentID = d.DepartmentID
+LEFT JOIN Employee_Projects ep ON p.ProjectID = ep.ProjectID
+LEFT JOIN Employees e ON ep.EmployeeID = e.EmployeeID
+ORDER BY p.ProjectName, ep.HoursWorked DESC;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- QUESTION 10: CROSS JOIN (Cartesian Product)
+-- Create all possible employee-project combinations for Engineering dept
+-- =============================================
+PRINT 'QUESTION 10: Show all possible combinations of Engineering employees and projects'
+PRINT 'Expected: Cartesian product of Engineering employees and projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.FirstName + ' ' + e.LastName AS EngineerName,
+    p.ProjectName
+FROM Employees e
+CROSS JOIN Projects p
+WHERE e.DepartmentID = 1  -- Engineering department
+ORDER BY EngineerName, p.ProjectName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- BONUS QUESTIONS (For Advanced Practice)
+-- =============================================
+
+-- BONUS 1: Find departments with no active projects
+PRINT 'BONUS 1: Find departments with no active projects'
+PRINT ''
+
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Departments d
+LEFT JOIN Projects p ON d.DepartmentID = p.DepartmentID
+WHERE p.ProjectID IS NULL;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- BONUS 2: Find employees not assigned to any project
+PRINT 'BONUS 2: Find employees not assigned to any project'
+PRINT ''
+
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS FullName,
+    d.DepartmentName,
+    e.JobTitle
+FROM Employees e
+LEFT JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+WHERE ep.ProjectID IS NULL
+ORDER BY d.DepartmentName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- BONUS 3: Calculate project budget utilization by department
+PRINT 'BONUS 3: Calculate total project budget by department'
+PRINT ''
+
+SELECT 
+    d.DepartmentName,
+    COUNT(p.ProjectID) AS NumberOfProjects,
+    SUM(p.Budget) AS TotalBudget,
+    AVG(p.Budget) AS AverageBudget
+FROM Departments d
+LEFT JOIN Projects p ON d.DepartmentID = p.DepartmentID
+GROUP BY d.DepartmentID, d.DepartmentName
+ORDER BY TotalBudget DESC;
+
+-- ===============================================================================================================================================
+
+-- =============================================
+-- ROUND 2 - SQL SERVER JOINS PRACTICE - FOCUSED ON JOIN TYPES ONLY
+-- Practice Questions: INNER, LEFT, RIGHT, FULL, ANTI JOINS
+-- NO GROUP BY, NO SUBQUERIES - Pure JOIN Practice
+-- =============================================
+
+USE CompanyDB;
+GO
+
+PRINT '============================================='
+PRINT 'FOCUSED JOINS PRACTICE - ALL JOIN TYPES'
+PRINT 'INNER, LEFT, RIGHT, FULL, LEFT ANTI, RIGHT ANTI, FULL ANTI'
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 1: INNER JOIN QUESTIONS (1-5)
+-- =============================================
+
+-- QUESTION 1: Basic INNER JOIN
+PRINT 'QUESTION 1: Find all employees who are assigned to a department'
+PRINT 'Expected: 19 employees (excludes Kevin Lee who has no department)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY e.LastName, e.FirstName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 2: INNER JOIN with Salaries
+PRINT 'QUESTION 2: Show employees who have salary records'
+PRINT 'Expected: 19 employees (excludes Kevin Lee who has no salary)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS FullName,
+    e.Email,
+    s.Salary,
+    s.EffectiveDate
+FROM Employees e
+INNER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 3: INNER JOIN - Projects with Departments
+PRINT 'QUESTION 3: List all projects that are assigned to departments'
+PRINT 'Expected: 8 projects (excludes AI Research Initiative which has no department)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    p.StartDate,
+    p.EndDate,
+    d.DepartmentName,
+    d.Location
+FROM Projects p
+INNER JOIN Departments d ON p.DepartmentID = d.DepartmentID
+ORDER BY p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 4: INNER JOIN - Employees working on Projects
+PRINT 'QUESTION 4: Show employees who are assigned to at least one project'
+PRINT 'Expected: Multiple rows per employee if they work on multiple projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    e.JobTitle,
+    p.ProjectName,
+    ep.Role,
+    ep.HoursWorked
+FROM Employees e
+INNER JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+INNER JOIN Projects p ON ep.ProjectID = p.ProjectID
+ORDER BY e.LastName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 5: INNER JOIN - Three tables
+PRINT 'QUESTION 5: Display employees with their department and salary (all must exist)'
+PRINT 'Expected: Only employees who have both department AND salary'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentName,
+    d.Location,
+    s.Salary
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+INNER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY s.Salary DESC;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 2: LEFT JOIN QUESTIONS (6-12)
+-- =============================================
+
+-- QUESTION 6: Basic LEFT JOIN
+PRINT 'QUESTION 6: List ALL employees and their departments (if they have one)'
+PRINT 'Expected: 20 employees, Kevin Lee will show NULL for department'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 7: LEFT JOIN - Employees and Salaries
+PRINT 'QUESTION 7: Show ALL employees and their salaries (if they have one)'
+PRINT 'Expected: 20 employees, Kevin Lee will show NULL for salary'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS FullName,
+    e.HireDate,
+    s.Salary,
+    s.EffectiveDate
+FROM Employees e
+LEFT JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 8: LEFT JOIN - Projects and Departments
+PRINT 'QUESTION 8: List ALL projects and their departments (if assigned)'
+PRINT 'Expected: 9 projects, AI Research will show NULL for department'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    p.Budget,
+    d.DepartmentName,
+    d.Location
+FROM Projects p
+LEFT JOIN Departments d ON p.DepartmentID = d.DepartmentID
+ORDER BY p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 9: LEFT JOIN - Departments and Projects
+PRINT 'QUESTION 9: Show ALL departments and their projects (if they have any)'
+PRINT 'Expected: Multiple rows for departments with multiple projects, NULL for departments without projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location,
+    p.ProjectID,
+    p.ProjectName,
+    p.Budget
+FROM Departments d
+LEFT JOIN Projects p ON d.DepartmentID = p.DepartmentID
+ORDER BY d.DepartmentName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 10: LEFT JOIN - Employees and Projects
+PRINT 'QUESTION 10: List ALL employees and projects they work on (if any)'
+PRINT 'Expected: Employees without projects will show NULL for project info'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    e.JobTitle,
+    p.ProjectName,
+    ep.Role,
+    ep.HoursWorked
+FROM Employees e
+LEFT JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+LEFT JOIN Projects p ON ep.ProjectID = p.ProjectID
+ORDER BY e.LastName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 11: LEFT JOIN - Chained Three Tables
+PRINT 'QUESTION 11: Show ALL employees with department and salary info (keep all employees)'
+PRINT 'Expected: 20 employees, some with NULL department or salary'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.Email,
+    d.DepartmentName,
+    s.Salary
+FROM Employees e
+LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+LEFT JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 12: LEFT JOIN - Projects with Department and Employees
+PRINT 'QUESTION 12: Display ALL projects with their department and assigned employees'
+PRINT 'Expected: All projects shown, even those without department or employees'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    d.DepartmentName,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    ep.Role
+FROM Projects p
+LEFT JOIN Departments d ON p.DepartmentID = d.DepartmentID
+LEFT JOIN Employee_Projects ep ON p.ProjectID = ep.ProjectID
+LEFT JOIN Employees e ON ep.EmployeeID = e.EmployeeID
+ORDER BY p.ProjectName, e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 3: RIGHT JOIN QUESTIONS (13-17)
+-- =============================================
+
+-- QUESTION 13: Basic RIGHT JOIN
+PRINT 'QUESTION 13: Show ALL departments and their employees (if they have any)'
+PRINT 'Expected: Research department will appear with NULL employee info'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+RIGHT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 14: RIGHT JOIN - Projects and Departments
+PRINT 'QUESTION 14: List ALL departments and projects they manage (if any)'
+PRINT 'Expected: All 7 departments, Research dept with NULL projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location,
+    p.ProjectID,
+    p.ProjectName,
+    p.Budget
+FROM Projects p
+RIGHT JOIN Departments d ON p.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 15: RIGHT JOIN - Employee Projects
+PRINT 'QUESTION 15: Show ALL projects and the employees assigned (if any)'
+PRINT 'Expected: All projects including those with no employee assignments'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    p.StartDate,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    ep.Role,
+    ep.HoursWorked
+FROM Employee_Projects ep
+RIGHT JOIN Projects p ON ep.ProjectID = p.ProjectID
+LEFT JOIN Employees e ON ep.EmployeeID = e.EmployeeID
+ORDER BY p.ProjectName, e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 16: RIGHT JOIN - Salaries to Employees
+PRINT 'QUESTION 16: Display ALL employees and their salaries using RIGHT JOIN'
+PRINT 'Expected: Same as LEFT JOIN but reversed - all 20 employees'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    s.Salary,
+    s.EffectiveDate
+FROM Salaries s
+RIGHT JOIN Employees e ON s.EmployeeID = e.EmployeeID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 17: RIGHT JOIN - Multiple Tables
+PRINT 'QUESTION 17: Show ALL departments with employees and their salaries'
+PRINT 'Expected: All departments, even those without employees'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    s.Salary
+FROM Employees e
+INNER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+RIGHT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 4: FULL OUTER JOIN QUESTIONS (18-22)
+-- =============================================
+
+-- QUESTION 18: Basic FULL OUTER JOIN
+PRINT 'QUESTION 18: Show ALL employees and ALL departments (including unmatched)'
+PRINT 'Expected: Kevin Lee (no dept) AND Research dept (no employees) both appear'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+FULL OUTER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 19: FULL OUTER JOIN - Projects and Departments
+PRINT 'QUESTION 19: Display ALL projects and ALL departments (including unmatched)'
+PRINT 'Expected: AI Research (no dept) AND Research dept (no projects) both visible'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    p.Budget,
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Projects p
+FULL OUTER JOIN Departments d ON p.DepartmentID = d.DepartmentID
+ORDER BY d.DepartmentName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 20: FULL OUTER JOIN - Employees and Salaries
+PRINT 'QUESTION 20: List ALL employees and ALL salary records (including unmatched)'
+PRINT 'Expected: Kevin Lee appears with NULL salary'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.Email,
+    s.SalaryID,
+    s.Salary,
+    s.EffectiveDate
+FROM Employees e
+FULL OUTER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 21: FULL OUTER JOIN - Employees and Projects
+PRINT 'QUESTION 21: Show ALL employees and ALL projects with their connections (if any)'
+PRINT 'Expected: Employees without projects AND projects without employees both shown'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    p.ProjectID,
+    p.ProjectName,
+    ep.Role,
+    ep.HoursWorked
+FROM Employees e
+FULL OUTER JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+FULL OUTER JOIN Projects p ON ep.ProjectID = p.ProjectID
+ORDER BY e.LastName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 22: FULL OUTER JOIN - Complex Three Table
+PRINT 'QUESTION 22: Display ALL employees, ALL departments, and salary info'
+PRINT 'Expected: Kevin Lee (no dept), Research dept (no emp), all salary relationships'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentID,
+    d.DepartmentName,
+    s.Salary
+FROM Employees e
+FULL OUTER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+LEFT JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 5: LEFT ANTI JOIN QUESTIONS (23-27)
+-- Returns records from LEFT table that have NO match in RIGHT table
+-- =============================================
+
+-- QUESTION 23: LEFT ANTI JOIN - Employees without Departments
+PRINT 'QUESTION 23: Find employees who are NOT assigned to any department'
+PRINT 'Expected: Only Kevin Lee (EmployeeID 120)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.Email,
+    e.JobTitle
+FROM Employees e
+LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+WHERE d.DepartmentID IS NULL
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 24: LEFT ANTI JOIN - Employees without Salaries
+PRINT 'QUESTION 24: Find employees who do NOT have salary records'
+PRINT 'Expected: Only Kevin Lee'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.HireDate,
+    e.JobTitle
+FROM Employees e
+LEFT JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+WHERE s.SalaryID IS NULL
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 25: LEFT ANTI JOIN - Projects without Departments
+PRINT 'QUESTION 25: List projects that are NOT assigned to any department'
+PRINT 'Expected: AI Research Initiative (ProjectID 209)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    p.StartDate,
+    p.EndDate,
+    p.Budget
+FROM Projects p
+LEFT JOIN Departments d ON p.DepartmentID = d.DepartmentID
+WHERE d.DepartmentID IS NULL
+ORDER BY p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 26: LEFT ANTI JOIN - Employees without Projects
+PRINT 'QUESTION 26: Find employees who are NOT assigned to any project'
+PRINT 'Expected: Employees like Kevin Lee and others not in Employee_Projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle
+FROM Employees e
+LEFT JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+WHERE ep.ProjectID IS NULL
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 27: LEFT ANTI JOIN - Departments without Employees
+PRINT 'QUESTION 27: Find departments that have NO employees assigned'
+PRINT 'Expected: Research department (DepartmentID 7)'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location,
+    d.ManagerID
+FROM Departments d
+LEFT JOIN Employees e ON d.DepartmentID = e.DepartmentID
+WHERE e.EmployeeID IS NULL
+ORDER BY d.DepartmentName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 6: RIGHT ANTI JOIN QUESTIONS (28-32)
+-- Returns records from RIGHT table that have NO match in LEFT table
+-- =============================================
+
+-- QUESTION 28: RIGHT ANTI JOIN - Departments without Employees (alternative)
+PRINT 'QUESTION 28: Find departments with NO employees using RIGHT JOIN approach'
+PRINT 'Expected: Research department'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+RIGHT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+WHERE e.EmployeeID IS NULL
+ORDER BY d.DepartmentName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 29: RIGHT ANTI JOIN - Employees without Salaries (alternative)
+PRINT 'QUESTION 29: Find employees with NO salary using RIGHT JOIN approach'
+PRINT 'Expected: Kevin Lee'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle
+FROM Salaries s
+RIGHT JOIN Employees e ON s.EmployeeID = e.EmployeeID
+WHERE s.SalaryID IS NULL
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 30: RIGHT ANTI JOIN - Departments without Projects
+PRINT 'QUESTION 30: Find departments that have NO projects assigned'
+PRINT 'Expected: Departments like HR, Research, Customer Support'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    d.Location
+FROM Projects p
+RIGHT JOIN Departments d ON p.DepartmentID = d.DepartmentID
+WHERE p.ProjectID IS NULL
+ORDER BY d.DepartmentName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 31: RIGHT ANTI JOIN - Projects without Employees
+PRINT 'QUESTION 31: Find projects with NO employees assigned'
+PRINT 'Expected: AI Research Initiative if no employees assigned'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    p.Budget,
+    p.StartDate
+FROM Employee_Projects ep
+RIGHT JOIN Projects p ON ep.ProjectID = p.ProjectID
+WHERE ep.EmployeeID IS NULL
+ORDER BY p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 32: RIGHT ANTI JOIN - Employees without Projects (alternative)
+PRINT 'QUESTION 32: Find employees with NO project assignments using RIGHT JOIN'
+PRINT 'Expected: Several employees not working on projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    e.JobTitle
+FROM Employee_Projects ep
+RIGHT JOIN Employees e ON ep.EmployeeID = e.EmployeeID
+WHERE ep.ProjectID IS NULL
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 7: FULL ANTI JOIN QUESTIONS (33-37)
+-- Returns all unmatched records from BOTH tables
+-- =============================================
+
+-- QUESTION 33: FULL ANTI JOIN - Unmatched Employees and Departments
+PRINT 'QUESTION 33: Find employees without departments AND departments without employees'
+PRINT 'Expected: Kevin Lee AND Research department'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentID,
+    d.DepartmentName
+FROM Employees e
+FULL OUTER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+WHERE e.DepartmentID IS NULL OR d.DepartmentID IS NULL
+ORDER BY e.LastName, d.DepartmentName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 34: FULL ANTI JOIN - Unmatched Projects and Departments
+PRINT 'QUESTION 34: Find projects without departments AND departments without projects'
+PRINT 'Expected: AI Research (no dept) AND departments with no projects'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    p.ProjectID,
+    p.ProjectName,
+    d.DepartmentID,
+    d.DepartmentName
+FROM Projects p
+FULL OUTER JOIN Departments d ON p.DepartmentID = d.DepartmentID
+WHERE p.DepartmentID IS NULL OR d.DepartmentID IS NULL
+ORDER BY p.ProjectName, d.DepartmentName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 35: FULL ANTI JOIN - Unmatched Employees and Salaries
+PRINT 'QUESTION 35: Find employees without salaries OR salary records without employees'
+PRINT 'Expected: Kevin Lee (no salary), should be no orphaned salary records'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    s.SalaryID,
+    s.Salary
+FROM Employees e
+FULL OUTER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+WHERE e.EmployeeID IS NULL OR s.SalaryID IS NULL
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 36: FULL ANTI JOIN - Unmatched Employees and Projects
+PRINT 'QUESTION 36: Find employees with NO projects AND projects with NO employees'
+PRINT 'Expected: Employees not on projects AND AI Research if unassigned'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    p.ProjectID,
+    p.ProjectName
+FROM Employees e
+FULL OUTER JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+FULL OUTER JOIN Projects p ON ep.ProjectID = p.ProjectID
+WHERE (e.EmployeeID IS NOT NULL AND ep.EmployeeID IS NULL) 
+   OR (p.ProjectID IS NOT NULL AND ep.ProjectID IS NULL)
+ORDER BY e.LastName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 37: FULL ANTI JOIN - Complex Scenario
+PRINT 'QUESTION 37: Find all orphaned records: Employees without dept, Depts without employees'
+PRINT 'Use different column checks to identify which side is orphaned'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    CASE 
+        WHEN e.EmployeeID IS NULL THEN 'Department without Employees'
+        WHEN d.DepartmentID IS NULL THEN 'Employee without Department'
+    END AS OrphanType,
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentID,
+    d.DepartmentName
+FROM Employees e
+FULL OUTER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+WHERE e.EmployeeID IS NULL OR d.DepartmentID IS NULL
+ORDER BY OrphanType, e.LastName, d.DepartmentName;
+
+PRINT ''
+PRINT '============================================='
+PRINT ''
+
+-- =============================================
+-- SECTION 8: MIXED JOIN PRACTICE (38-42)
+-- Combining different JOIN types
+-- =============================================
+
+-- QUESTION 38: INNER + LEFT JOIN Combination
+PRINT 'QUESTION 38: Show employees with departments (INNER) and their projects (LEFT)'
+PRINT 'Expected: Only employees with departments, but show all their projects or NULL'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    d.DepartmentName,
+    p.ProjectName,
+    ep.Role
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+LEFT JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+LEFT JOIN Projects p ON ep.ProjectID = p.ProjectID
+ORDER BY e.LastName, p.ProjectName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 39: LEFT + INNER JOIN Combination
+PRINT 'QUESTION 39: Show all employees (LEFT) but only those with salaries (INNER)'
+PRINT 'Expected: All employees, but salary info only for those who have it'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentName,
+    s.Salary
+FROM Employees e
+LEFT JOIN Departments d ON e.DepartmentID = d.DepartmentID
+INNER JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 40: Multiple LEFT JOINs
+PRINT 'QUESTION 40: Show all departments with projects and employees working on them'
+PRINT 'Expected: All departments, with project and employee info where applicable'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    d.DepartmentID,
+    d.DepartmentName,
+    p.ProjectName,
+    e.FirstName + ' ' + e.LastName AS EmployeeName,
+    ep.HoursWorked
+FROM Departments d
+LEFT JOIN Projects p ON d.DepartmentID = p.DepartmentID
+LEFT JOIN Employee_Projects ep ON p.ProjectID = ep.ProjectID
+LEFT JOIN Employees e ON ep.EmployeeID = e.EmployeeID
+ORDER BY d.DepartmentName, p.ProjectName, e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 41: FULL OUTER + LEFT JOIN
+PRINT 'QUESTION 41: All employees and departments (FULL), with salary info (LEFT)'
+PRINT 'Expected: Kevin Lee and Research dept both shown, with salary where available'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentName,
+    s.Salary
+FROM Employees e
+FULL OUTER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+LEFT JOIN Salaries s ON e.EmployeeID = s.EmployeeID
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '--------------------------------------------'
+PRINT ''
+
+-- QUESTION 42: Anti JOIN followed by INNER JOIN
+PRINT 'QUESTION 42: Find employees without projects, but show their department (INNER)'
+PRINT 'Expected: Employees not on projects who DO have departments'
+PRINT ''
+
+-- ANSWER:
+SELECT 
+    e.EmployeeID,
+    e.FirstName,
+    e.LastName,
+    d.DepartmentName,
+    d.Location
+FROM Employees e
+INNER JOIN Departments d ON e.DepartmentID = d.DepartmentID
+LEFT JOIN Employee_Projects ep ON e.EmployeeID = ep.EmployeeID
+WHERE ep.ProjectID IS NULL
+ORDER BY d.DepartmentName, e.LastName;
+
+PRINT ''
+PRINT '============================================='
+PRINT 'END OF FOCUSED JOINS PRACTICE'
+PRINT 'Total Questions: 42'
+PRINT '============================================='
+
+GO
